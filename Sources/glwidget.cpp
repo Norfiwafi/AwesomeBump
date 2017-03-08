@@ -487,7 +487,7 @@ void GLWidget::initializeGL()
     skybox_mesh = new Mesh(QString(RESOURCE_BASE) + "Core/3D/","sky_cube.obj");
     env_mesh    = new Mesh(QString(RESOURCE_BASE) + "Core/3D/","sky_cube_env.obj");
     quad_mesh   = new Mesh(QString(RESOURCE_BASE) + "Core/3D/","quad.obj");
-    loaded = mesh->isLoaded();
+    bool loaded = mesh->isLoaded();
 
     GLenum errMesh = glGetError();
 
