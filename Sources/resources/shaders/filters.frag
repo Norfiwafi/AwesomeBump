@@ -1063,8 +1063,9 @@ vec4 ffilter(){
 
     const vec2 size = vec2(1.0,0.0);
     const ivec3 off = ivec3(-1,0,1);
-    const ivec2 dx  = ivec2(1,0);
-    const ivec2 dy  = ivec2(0,1);
+#define dx ivec2(1, 0)
+#define dy ivec2(0, 1)
+
     vec2 tex_coord =  v2QuadCoords.st;
     highp float R0  = texture(layerA, tex_coord).x;
 

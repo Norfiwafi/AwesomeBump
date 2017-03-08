@@ -293,6 +293,11 @@ void GLImage::initializeGL()
 
 #endif
 
+
+
+
+    GLCHK(glGenVertexArrays(1, &vao));
+    GLCHK(glBindVertexArray(vao));
     makeScreenQuad();
 
     averageColorFBO = NULL;
@@ -314,18 +319,19 @@ void GLImage::initializeGL()
     paintFBO   = NULL;
 
     emit readyGL();
+    GLCHK(glBindVertexArray(0));
 }
 
 void GLImage::paintGL()
 {
+    glBindVertexArray(vao);
 
     // Perform filters on images and render the final result to renderFBO
     // avoid rendering function if there is rendered something already
-    if(!bSkipProcessing && !bRendering){        
+    if(!bSkipProcessing && !bRendering ){
         bRendering = true;
         render();
     }
-
 
     bSkipProcessing = false;
     conversionType  = CONVERT_NONE;
@@ -376,14 +382,15 @@ void GLImage::paintGL()
         GLCHK( program->setUniformValue("quad_draw_mode", int(0)) );
     }
 
+    glBindVertexArray(0);
 }
 
 
 
 void GLImage::render(){
-
-
     if (!activeImage) return;
+
+
     if ( activeImage->fbo){ // since grunge map can be different we need to calculate ratio each time
       fboRatio = float(activeImage->fbo->width())/activeImage->fbo->height();
       orthographicProjHeight = (1+zoom)/windowRatio;
@@ -396,8 +403,6 @@ void GLImage::render(){
 
     GLCHK( glDisable(GL_CULL_FACE) );
     GLCHK( glDisable(GL_DEPTH_TEST) );
-
-
 
     // positions
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
@@ -2807,20 +2812,23 @@ void GLImage::makeScreenQuad()
             iter++;
     }}
 
+    GLenum err = glGetError();
     glGenBuffers(3, &vbos[0]);
+
+    err = glGetError();
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float)*3, vertices.constData(), GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
+    err = glGetError();
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(float)*3,(void*)0);
+    glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
     glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(float)*2, texCoords.constData(), GL_STATIC_DRAW);
-    glEnableVertexAttribArray(1);
     glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,sizeof(float)*2,(void*)0);
-
+    glEnableVertexAttribArray(1);
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[2]);
-
 
     int no_triangles = 2*(size - 1)*(size - 1);
     QVector<GLuint> indices(no_triangles*3);

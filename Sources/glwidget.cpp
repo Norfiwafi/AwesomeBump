@@ -193,8 +193,8 @@ void GLWidget::initializeGL()
 
 
     glEnable(GL_DEPTH_TEST);
+    GLenum errEnable = glGetError();
     glEnable(GL_MULTISAMPLE);
-    glEnable(GL_DEPTH_TEST);
 
     qDebug() << "Initializing 3D widget: detected openGL version:" << QString::number(Display3DSettings::openGLVersion);
 
@@ -446,6 +446,7 @@ void GLWidget::initializeGL()
         filter_program->addShader(vshader);
         filter_program->addShader(fshader);
         filter_program->bindAttributeLocation("positionIn", 0);
+        GLenum err = glGetError();
         GLCHK( filter_program->link() );
 
         GLCHK( filter_program->bind() );
@@ -486,9 +487,13 @@ void GLWidget::initializeGL()
     skybox_mesh = new Mesh(QString(RESOURCE_BASE) + "Core/3D/","sky_cube.obj");
     env_mesh    = new Mesh(QString(RESOURCE_BASE) + "Core/3D/","sky_cube_env.obj");
     quad_mesh   = new Mesh(QString(RESOURCE_BASE) + "Core/3D/","quad.obj");
+    loaded = mesh->isLoaded();
+
+    GLenum errMesh = glGetError();
 
     m_prefiltered_env_map = new GLTextureCube(512);
 
+    errMesh = glGetError();
     resizeFBOs();
     emit readyGL();
 }
@@ -496,12 +501,12 @@ void GLWidget::initializeGL()
 void GLWidget::paintGL()
 {
 
-
-     glReadBuffer(GL_BACK);
+    GLCHK(glReadBuffer(GL_BACK));
     // ---------------------------------------------------------
     // Drawing env
     // ---------------------------------------------------------
     bakeEnviromentalMaps();
+    GLenum envirErr = glGetError();
     colorFBO->bindDefault();
     GLCHK( glViewport(0, 0, width(), height()) );
 
@@ -695,7 +700,7 @@ void GLWidget::paintGL()
 
     // set to which FBO result will be drawn
     GLuint attachments2[1] = { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1,  attachments2);
+    GLCHK(glDrawBuffers(1,  attachments2));
 
 
     colorFBO->bindDefault();
@@ -1224,7 +1229,7 @@ void GLWidget::copyTexToFBO(GLuint input_tex,QGLFramebufferObject* dst){
     GLCHK( filter_program->setUniformValue("quad_pos"  , QVector2D(0.0,0.0)) );
     GLCHK( glActiveTexture(GL_TEXTURE0) );
     GLCHK( glBindTexture(GL_TEXTURE_2D, input_tex) );
-    quad_mesh->drawMesh(true);
+    GLCHK(quad_mesh->drawMesh(true));
     dst->bindDefault();
 
 }
