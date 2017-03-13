@@ -35,8 +35,8 @@
 #define GLBUFFERS_H
 
 #include <QtOpenGL>
-//#include <QOpenGLFunctions_4_0_Core>
-#include <QOpenGLFunctions_3_3_Core>
+#include <QOpenGLFunctions_4_0_Core>
+//#include <QOpenGLFunctions_3_3_Core>
 #include <QtWidgets>
 #include <QDebug>
 #include "../qopenglerrorcheck.h"
@@ -53,13 +53,14 @@ QT_BEGIN_NAMESPACE
 class QMatrix4x4;
 QT_END_NAMESPACE
 
-class GLTexture : public QOpenGLFunctions_3_3_Core
+class GLTexture : public QOpenGLFunctions_4_0_Core
 {
 public:
     GLTexture();
     virtual ~GLTexture();
     virtual void bind() = 0;
     virtual void unbind() = 0;
+    virtual void create();
     virtual bool failed() const {return m_failed;}
 protected:
     GLuint m_texture;
@@ -67,13 +68,13 @@ protected:
     bool m_failed;
 };
 
-class GLFrameBufferObject : public QOpenGLFunctions_3_3_Core
+class GLFrameBufferObject : public QOpenGLFunctions_4_0_Core
 {
 public:
     friend class GLRenderTargetCube;
     // friend class GLRenderTarget2D;
 
-    GLFrameBufferObject(int width, int height);
+    GLFrameBufferObject(int width, int height, GLuint defaultFbo);
     virtual ~GLFrameBufferObject();
     bool isComplete();
     virtual bool failed() const {return m_failed;}
@@ -81,10 +82,11 @@ public:
     void bindDefault();
     bool addTexture(GLenum COLOR_ATTACHMENTn);
     const GLuint& getAttachedTexture(GLuint index);
-    QGLFramebufferObject *fbo;
+    QOpenGLFramebufferObject *fbo;
 protected:
     int m_width, m_height;
     bool m_failed;    
+    GLuint defaultFBO;
     QVector<GLuint> attachments;
 };
 
@@ -94,8 +96,16 @@ public:
     GLTexture2D(int width, int height);
     explicit GLTexture2D(const QString& fileName, int width = 0, int height = 0);
     void load(int width, int height, QRgb *data);
+    virtual void create() Q_DECL_OVERRIDE;
     virtual void bind() Q_DECL_OVERRIDE;
     virtual void unbind() Q_DECL_OVERRIDE;
+private:
+    void createTextureWithFileName(const QString& fileName, int width = 0, int height = 0);
+    void createTextureWithSize(int width, int height);
+private:
+    int width;
+    int height;
+    QString fileName;
 };
 
 class GLTexture3D : public GLTexture
@@ -105,22 +115,36 @@ public:
     // TODO: Implement function below
     //GLTexture3D(const QString& fileName, int width = 0, int height = 0);
     void load(int width, int height, int depth, QRgb *data);
+    virtual void create() Q_DECL_OVERRIDE;
     virtual void bind() Q_DECL_OVERRIDE;
     virtual void unbind() Q_DECL_OVERRIDE;
+
+private:
+    int width;
+    int height;
+    int depth;
 };
 
 class GLTextureCube : public GLTexture
 {
 public:
-    GLTextureCube(int size);
+    GLTextureCube(int size, GLuint defaultFBO);
     explicit GLTextureCube(const QStringList& fileNames, int size = 0);
     void load(int size, int face, QRgb *data);
+    virtual void create() Q_DECL_OVERRIDE;
     virtual void bind() Q_DECL_OVERRIDE;
     virtual void bindFBO();
     virtual void unbind() Q_DECL_OVERRIDE;
     int textureCalcLevels(GLenum target);
+private:
+    void createTextureCubeFromFileNames(const QStringList& fileNames, int size = 0);
+    void createTextureCubeWithSize(int size);
 public:
     int numMipmaps;
+private:
+    QStringList fileNames;
+    GLuint defaultFBO;
+    int size;
 };
 
 

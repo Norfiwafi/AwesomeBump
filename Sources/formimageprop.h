@@ -24,9 +24,9 @@ class FormImageProp : public FormImageBase
     Q_OBJECT
 
 public:
-    explicit FormImageProp(QMainWindow *parent = 0, QGLWidget* qlW_ptr = 0);
+    explicit FormImageProp(QMainWindow *parent = 0, QOpenGLWidget* qlW_ptr = 0);
     void setImage(QImage image);
-    void setPtrToGLWidget(QGLWidget* ptr){ imageProp.glWidget_ptr = ptr;  }
+    void setPtrToGLWidget(QOpenGLWidget* ptr){ imageProp.glWidget_ptr = ptr;  }
 
     void setupPopertiesGUI();
     void reloadSettings();

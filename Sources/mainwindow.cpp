@@ -93,35 +93,35 @@ void MainWindow::initializeApp()
 
     // setting pointers to images
 
-    materialManager->imagesPointers[0]  = diffuseImageProp;
-    materialManager->imagesPointers[1]  = normalImageProp;
-    materialManager->imagesPointers[2]  = specularImageProp;
-    materialManager->imagesPointers[3]  = heightImageProp;
-    materialManager->imagesPointers[4]  = occlusionImageProp;
-    materialManager->imagesPointers[5]  = roughnessImageProp;
-    materialManager->imagesPointers[6]  = metallicImageProp;
+//    materialManager->imagesPointers[0]  = diffuseImageProp;
+//    materialManager->imagesPointers[1]  = normalImageProp;
+//    materialManager->imagesPointers[2]  = specularImageProp;
+//    materialManager->imagesPointers[3]  = heightImageProp;
+//    materialManager->imagesPointers[4]  = occlusionImageProp;
+//    materialManager->imagesPointers[5]  = roughnessImageProp;
+//    materialManager->imagesPointers[6]  = metallicImageProp;
 
 
-    // Setting pointers to 3D view (this pointer are used to bindTextures).
-    glWidget->setPointerToTexture(&diffuseImageProp->getImageProporties()  ->fbo,DIFFUSE_TEXTURE);
-    glWidget->setPointerToTexture(&normalImageProp->getImageProporties()   ->fbo,NORMAL_TEXTURE);
-    glWidget->setPointerToTexture(&specularImageProp->getImageProporties() ->fbo,SPECULAR_TEXTURE);
-    glWidget->setPointerToTexture(&heightImageProp->getImageProporties()   ->fbo,HEIGHT_TEXTURE);
-    glWidget->setPointerToTexture(&occlusionImageProp->getImageProporties()->fbo,OCCLUSION_TEXTURE);
-    glWidget->setPointerToTexture(&roughnessImageProp->getImageProporties()->fbo,ROUGHNESS_TEXTURE);
-    glWidget->setPointerToTexture(&metallicImageProp->getImageProporties()->fbo ,METALLIC_TEXTURE);
-    glWidget->setPointerToTexture(&materialManager->getImageProporties()->fbo,MATERIAL_TEXTURE);
+//    // Setting pointers to 3D view (this pointer are used to bindTextures).
+//    GLCHK(glWidget->setPointerToTexture(&diffuseImageProp->getImageProporties()  ->fbo,DIFFUSE_TEXTURE));
+//    glWidget->setPointerToTexture(&normalImageProp->getImageProporties()   ->fbo,NORMAL_TEXTURE);
+//    glWidget->setPointerToTexture(&specularImageProp->getImageProporties() ->fbo,SPECULAR_TEXTURE);
+//    glWidget->setPointerToTexture(&heightImageProp->getImageProporties()   ->fbo,HEIGHT_TEXTURE);
+//    glWidget->setPointerToTexture(&occlusionImageProp->getImageProporties()->fbo,OCCLUSION_TEXTURE);
+//    glWidget->setPointerToTexture(&roughnessImageProp->getImageProporties()->fbo,ROUGHNESS_TEXTURE);
+//    glWidget->setPointerToTexture(&metallicImageProp->getImageProporties()->fbo ,METALLIC_TEXTURE);
+//    glWidget->setPointerToTexture(&materialManager->getImageProporties()->fbo,MATERIAL_TEXTURE);
 
 
-    glImage ->targetImageNormal    = normalImageProp   ->getImageProporties();
-    glImage ->targetImageHeight    = heightImageProp   ->getImageProporties();
-    glImage ->targetImageSpecular  = specularImageProp ->getImageProporties();
-    glImage ->targetImageOcclusion = occlusionImageProp->getImageProporties();
-    glImage ->targetImageDiffuse   = diffuseImageProp  ->getImageProporties();
-    glImage ->targetImageRoughness = roughnessImageProp->getImageProporties();
-    glImage ->targetImageMetallic  = metallicImageProp ->getImageProporties();
-    glImage ->targetImageMaterial  = materialManager   ->getImageProporties();
-    glImage ->targetImageGrunge    = grungeImageProp   ->getImageProporties();
+//    glImage ->targetImageNormal    = normalImageProp   ->getImageProporties();
+//    glImage ->targetImageHeight    = heightImageProp   ->getImageProporties();
+//    glImage ->targetImageSpecular  = specularImageProp ->getImageProporties();
+//    glImage ->targetImageOcclusion = occlusionImageProp->getImageProporties();
+//    glImage ->targetImageDiffuse   = diffuseImageProp  ->getImageProporties();
+//    glImage ->targetImageRoughness = roughnessImageProp->getImageProporties();
+//    glImage ->targetImageMetallic  = metallicImageProp ->getImageProporties();
+//    glImage ->targetImageMaterial  = materialManager   ->getImageProporties();
+//    glImage ->targetImageGrunge    = grungeImageProp   ->getImageProporties();
 
     qDebug() << "Initialization: GUI setup";
     INIT_PROGRESS(30, "GUI setup");
@@ -130,7 +130,6 @@ void MainWindow::initializeApp()
     //                      GUI setup
     // ------------------------------------------------------
     ui->statusbar->addWidget(statusLabel);
-
 
 
     // Settings container
@@ -149,11 +148,14 @@ void MainWindow::initializeApp()
 
     ui->verticalLayout3DImage->addWidget(dock3Dsettings);
     setDockNestingEnabled(true);
+    connect(glWidget, SIGNAL(readyGL()), dock3Dsettings, SLOT(skyBox()));
     connect(dock3Dsettings,SIGNAL(signalSelectedShadingModel(int)),this,SLOT(selectShadingModel(int)));
     // show hide 3D settings
     connect(ui->pushButton3DSettings ,SIGNAL(toggled(bool)),dock3Dsettings,SLOT(setVisible(bool)));
 
     dialog3dGeneralSettings = new Dialog3DGeneralSettings(this);
+    connect(glWidget, SIGNAL(shadersCompute()), dialog3dGeneralSettings, SLOT(loadShaderSettings()));
+//    connect(glImage, SIGNAL(shadersCompute()), dialog3dGeneralSettings, SLOT(loadShaderSettings()));
     connect(ui->pushButton3DGeneralSettings,SIGNAL(released()),dialog3dGeneralSettings,SLOT(show()));
     connect(dialog3dGeneralSettings,SIGNAL(signalPropertyChanged()),glWidget,SLOT(repaint()));
     connect(dialog3dGeneralSettings,SIGNAL(signalRecompileCustomShader()),glWidget,SLOT(recompileRenderShader()));
@@ -408,17 +410,19 @@ void MainWindow::initializeApp()
     qDebug() << "Initialization: Loading default (initial) textures.";
     INIT_PROGRESS(80, "Loading default (initial) textures.");
 
-    // Loading default (initial) textures
-    diffuseImageProp   ->setImage(QImage(QString(":/resources/logo/logo_D.png")));
 
-    normalImageProp    ->setImage(QImage(QString(":/resources/logo/logo_N.png")));
-    specularImageProp  ->setImage(QImage(QString(":/resources/logo/logo_D.png")));
-    heightImageProp    ->setImage(QImage(QString(":/resources/logo/logo_H.png")));
-    occlusionImageProp ->setImage(QImage(QString(":/resources/logo/logo_O.png")));
-    roughnessImageProp ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
-    metallicImageProp  ->setImage(QImage(QString(":/resources/logo/logo_M.png")));
-    grungeImageProp    ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
-    materialManager    ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
+    connect(glImage, SIGNAL(readyGL()), this, SLOT(initializeGL()));
+    // Loading default (initial) textures
+//    diffuseImageProp   ->setImage(QImage(QString(":/resources/logo/logo_D.png")));
+
+//    normalImageProp    ->setImage(QImage(QString(":/resources/logo/logo_N.png")));
+//    specularImageProp  ->setImage(QImage(QString(":/resources/logo/logo_D.png")));
+//    heightImageProp    ->setImage(QImage(QString(":/resources/logo/logo_H.png")));
+//    occlusionImageProp ->setImage(QImage(QString(":/resources/logo/logo_O.png")));
+//    roughnessImageProp ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
+//    metallicImageProp  ->setImage(QImage(QString(":/resources/logo/logo_M.png")));
+//    grungeImageProp    ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
+//    materialManager    ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
 
 
     diffuseImageProp   ->setImageName(ui->lineEditOutputName->text());
@@ -431,7 +435,7 @@ void MainWindow::initializeApp()
     grungeImageProp    ->setImageName(ui->lineEditOutputName->text());
 
     // Setting the active image
-    glImage->setActiveImage(diffuseImageProp->getImageProporties());
+//    glImage->setActiveImage(diffuseImageProp->getImageProporties());
 
     INIT_PROGRESS(90, "Updating main menu items.");
 
@@ -552,9 +556,11 @@ void MainWindow::replotAllImages(){
 
     glImage->setActiveImage(lastActive);
     glWidget->update();
+
+    glWidget->makeCurrent();
     
-    QGLContext* glContext = (QGLContext *) glWidget->context();
-    GLCHK( glContext->makeCurrent() );
+//    QGLContext* glContext = (QGLContext *) glWidget->context();
+//    GLCHK( glContext->makeCurrent() );
 
 #ifndef Q_OS_MAC
     GpuInfo glGpu(glContext);
@@ -799,10 +805,10 @@ bool MainWindow::saveAllImages(const QString &dir){
         QCoreApplication::processEvents();
         glImage->makeCurrent();
 
-        QGLFramebufferObject* diffuseFBOImage  = diffuseImageProp->getImageProporties()->fbo;
-        QGLFramebufferObject* normalFBOImage   = normalImageProp->getImageProporties()->fbo;
-        QGLFramebufferObject* specularFBOImage = specularImageProp->getImageProporties()->fbo;
-        QGLFramebufferObject* heightFBOImage   = heightImageProp->getImageProporties()->fbo;
+        QOpenGLFramebufferObject* diffuseFBOImage  = diffuseImageProp->getImageProporties()->fbo;
+        QOpenGLFramebufferObject* normalFBOImage   = normalImageProp->getImageProporties()->fbo;
+        QOpenGLFramebufferObject* specularFBOImage = specularImageProp->getImageProporties()->fbo;
+        QOpenGLFramebufferObject* heightFBOImage   = heightImageProp->getImageProporties()->fbo;
 
         QImage diffuseImage = diffuseFBOImage->toImage() ;
         QImage normalImage  = normalFBOImage->toImage();
@@ -1059,6 +1065,17 @@ void MainWindow::initializeGL(){
       one_time = true;
 
       qDebug() << "calling" << Q_FUNC_INFO;
+
+
+      // setting pointers to images
+
+      materialManager->imagesPointers[0]  = diffuseImageProp;
+      materialManager->imagesPointers[1]  = normalImageProp;
+      materialManager->imagesPointers[2]  = specularImageProp;
+      materialManager->imagesPointers[3]  = heightImageProp;
+      materialManager->imagesPointers[4]  = occlusionImageProp;
+      materialManager->imagesPointers[5]  = roughnessImageProp;
+      materialManager->imagesPointers[6]  = metallicImageProp;
       
       // Loading default (initial) textures
       diffuseImageProp  ->setImage(QImage(QString(":/resources/logo/logo_D.png")));
@@ -1069,6 +1086,7 @@ void MainWindow::initializeGL(){
       roughnessImageProp->setImage(QImage(QString(":/resources/logo/logo_R.png")));
       metallicImageProp ->setImage(QImage(QString(":/resources/logo/logo_M.png")));
       grungeImageProp   ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
+      materialManager    ->setImage(QImage(QString(":/resources/logo/logo_R.png")));
 
       diffuseImageProp  ->setImageName(ui->lineEditOutputName->text());
       normalImageProp   ->setImageName(ui->lineEditOutputName->text());
@@ -1080,6 +1098,29 @@ void MainWindow::initializeGL(){
       grungeImageProp   ->setImageName(ui->lineEditOutputName->text());
       // Setting the active image
       glImage->setActiveImage(diffuseImageProp->getImageProporties());
+
+      glImage ->targetImageNormal    = normalImageProp   ->getImageProporties();
+      glImage ->targetImageHeight    = heightImageProp   ->getImageProporties();
+      glImage ->targetImageSpecular  = specularImageProp ->getImageProporties();
+      glImage ->targetImageOcclusion = occlusionImageProp->getImageProporties();
+      glImage ->targetImageDiffuse   = diffuseImageProp  ->getImageProporties();
+      glImage ->targetImageRoughness = roughnessImageProp->getImageProporties();
+      glImage ->targetImageMetallic  = metallicImageProp ->getImageProporties();
+      glImage ->targetImageMaterial  = materialManager   ->getImageProporties();
+      glImage ->targetImageGrunge    = grungeImageProp   ->getImageProporties();
+
+
+      // Setting pointers to 3D view (this pointer are used to bindTextures).
+      GLCHK(glWidget->setPointerToTexture(&diffuseImageProp->getImageProporties()  ->fbo,DIFFUSE_TEXTURE));
+      glWidget->setPointerToTexture(&normalImageProp->getImageProporties()   ->fbo,NORMAL_TEXTURE);
+      glWidget->setPointerToTexture(&specularImageProp->getImageProporties() ->fbo,SPECULAR_TEXTURE);
+      glWidget->setPointerToTexture(&heightImageProp->getImageProporties()   ->fbo,HEIGHT_TEXTURE);
+      glWidget->setPointerToTexture(&occlusionImageProp->getImageProporties()->fbo,OCCLUSION_TEXTURE);
+      glWidget->setPointerToTexture(&roughnessImageProp->getImageProporties()->fbo,ROUGHNESS_TEXTURE);
+      glWidget->setPointerToTexture(&metallicImageProp->getImageProporties()->fbo ,METALLIC_TEXTURE);
+      glWidget->setPointerToTexture(&materialManager->getImageProporties()->fbo,MATERIAL_TEXTURE);
+
+
     }
 }
 
@@ -1222,8 +1263,8 @@ void MainWindow::applyScaleImage(){
     QCoreApplication::processEvents();
     float scale_width   = ui->doubleSpinBoxRescaleWidth ->value();
     float scale_height  = ui->doubleSpinBoxRescaleHeight->value();
-    int width  = diffuseImageProp->getImageProporties()->scr_tex_width *scale_width;
-    int height = diffuseImageProp->getImageProporties()->scr_tex_height*scale_height;
+    int width  = diffuseImageProp->getImageProporties()->currentTexture->width() *scale_width;
+    int height = diffuseImageProp->getImageProporties()->currentTexture->height()*scale_height;
 
     qDebug() << "Image rescale applied. Current image size is (" << width << "," << height << ")" ;
     int materiaIndex = FBOImageProporties::currentMaterialIndeks;
@@ -1397,7 +1438,6 @@ void MainWindow::convertFromBase(){
     roughnessImageProp->setImageName(diffuseImageProp->getImageName());
     metallicImageProp ->setImageName(diffuseImageProp->getImageName());
     glImage->setConversionType(CONVERT_FROM_D_TO_O);
-    glImage->updateGLNow();
     glImage->setConversionType(CONVERT_FROM_D_TO_O);
     replotAllImages();
 

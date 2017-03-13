@@ -209,14 +209,16 @@ extern void regABColorDelegates();
 
 int main(int argc, char *argv[])
 {
+    QApplication::setAttribute( Qt::AA_ShareOpenGLContexts );
     QApplication app(argc, argv);
+
 
 
 
     regABSliderDelegates();
     regABColorDelegates();
 
-    qInstallMessageHandler(customMessageHandler);
+    //qInstallMessageHandler(customMessageHandler);
 
     qDebug() << "Starting application:";
     qDebug() << "Application dir:" << QApplication::applicationDirPath();

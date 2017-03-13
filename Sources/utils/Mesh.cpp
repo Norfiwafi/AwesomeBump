@@ -243,8 +243,11 @@ bool Mesh::hasCommonEdge(int i, int j){
 void Mesh::drawMesh(bool bUseArrays ){
     if(bLoaded == false) return;
 
-    glBindBuffer(GL_ARRAY_BUFFER, mesh_vbos[0]);
-    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(QVector3D),(void*)0);
+    glBindVertexArray(vao);
+
+//    GLCHK(glBindVertexArray(vertexArray));
+    GLCHK(glBindBuffer(GL_ARRAY_BUFFER, mesh_vbos[0]));
+    GLCHK(glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(QVector3D),(void*)0));
 
     glBindBuffer(GL_ARRAY_BUFFER, mesh_vbos[1]);
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(QVector3D),(void*)0);
@@ -263,6 +266,8 @@ void Mesh::drawMesh(bool bUseArrays ){
 
 
 
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
     if(bUseArrays){
         GLCHK(glDrawArrays(GL_TRIANGLES, 0,  gl_vertices.size()));
 
@@ -275,9 +280,13 @@ void Mesh::drawMesh(bool bUseArrays ){
         #endif
     }
 
+
+    GLCHK(glBindVertexArray(0));
+
 }
 
 void Mesh::initializeMesh(){
+
     //static bool bOneTime = true;
     //if(!bOneTime) return;
     //bOneTime = false;
@@ -289,12 +298,19 @@ void Mesh::initializeMesh(){
         return;
     }
     initializeOpenGLFunctions();
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+//    glGenVertexArrays(1, &vertexArray);
+//    GLCHK(glBindVertexArray(vertexArray));
+
     glGenBuffers(6, &mesh_vbos[0]);
 
 
     glBindBuffer(GL_ARRAY_BUFFER, mesh_vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, gl_vertices.size() * sizeof(QVector3D), gl_vertices.constData(), GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
+    GLCHK(glEnableVertexAttribArray(0));
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(QVector3D),(void*)0);
 
 
@@ -323,9 +339,7 @@ void Mesh::initializeMesh(){
     glEnableVertexAttribArray(5);
     glVertexAttribPointer(5,3,GL_FLOAT,GL_FALSE,sizeof(QVector3D),(void*)0);
 
-
-
-
+    GLCHK(glBindVertexArray(0));
 }
 
 

@@ -38,22 +38,6 @@ Dialog3DGeneralSettings::Dialog3DGeneralSettings(QWidget* parent) :
     connect(settings,SIGNAL(propertyDidChange(const QtnPropertyBase*,const QtnPropertyBase*,QtnPropertyChangeReason)),
                 this,SLOT(propertyChanged(const QtnPropertyBase*,const QtnPropertyBase*,QtnPropertyChangeReason)));
 
-
-    glslParsedShaders = new GLSLParsedShaderContainer; // parse and creat list of avaiable shaders in Render folder
-
-    // Create list of available shaders
-    QStringList shaderList;
-    for(int i = 0 ; i < glslParsedShaders->glslParsedShaders.size(); i++){
-        shaderList << glslParsedShaders->glslParsedShaders.at(i)->shaderName;
-    }
-    ui->comboBoxShadersList->addItems(shaderList);
-    // Setup pointer and comboBox
-    int lastIndex = settings->ParsedShader.LastShaderIndex.value();
-    ui->comboBoxShadersList->setCurrentIndex(lastIndex);
-    currentRenderShader  = glslParsedShaders->glslParsedShaders[lastIndex];
-
-    connect(ui->comboBoxShadersList,SIGNAL(currentIndexChanged(int)),this,SLOT(shaderChanged(int)));
-
 }
 
 void Dialog3DGeneralSettings::propertyChanged(const QtnPropertyBase* changedProperty,
@@ -108,8 +92,28 @@ void Dialog3DGeneralSettings::saveSettings(){
     QTextStream outstream(&file);
     outstream << property;
 }
+void Dialog3DGeneralSettings::loadShaderSettings()
+{
+    // Create list of available shaders
+    QStringList shaderList;
+    for(int i = 0 ; i < glslParsedShaders->glslParsedShaders.size(); i++){
+        shaderList << glslParsedShaders->glslParsedShaders.at(i)->shaderName;
+    }
+    ui->comboBoxShadersList->addItems(shaderList);
+    // Setup pointer and comboBox
+    int lastIndex = settings3D->ParsedShader.LastShaderIndex.value();
+    ui->comboBoxShadersList->setCurrentIndex(lastIndex);
+    currentRenderShader  = glslParsedShaders->glslParsedShaders[lastIndex];
+
+    connect(ui->comboBoxShadersList,SIGNAL(currentIndexChanged(int)),this,SLOT(shaderChanged(int)));
+}
 
 void Dialog3DGeneralSettings::updateParsedShaders(){
+    if (currentRenderShader == NULL)
+    {
+        int lastIndex = settings3D->ParsedShader.LastShaderIndex.value();
+        currentRenderShader  = glslParsedShaders->glslParsedShaders[lastIndex];
+    }
     GLSLShaderParser* parsedShader = currentRenderShader;
     int maxParams      = settings3D->ParsedShader.MaxParams;
     int noParsedParams = parsedShader->uniforms.size();

@@ -77,8 +77,11 @@ private:
     QVector<QVector3D> gl_tangents;
     QVector<QVector3D> gl_bitangents;
 
+
+    GLuint vao;
     unsigned int mesh_vbos[6]; // VBO indices
     QString mesh_log;
+//    GLuint vertexArray;
 };
 
 

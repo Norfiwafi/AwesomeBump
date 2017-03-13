@@ -30,6 +30,7 @@ public slots:
      * and sending them to the glWidget to update 3D window.
      */
 
+    void skyBox();
     void updateSettings(int i = 0);
     void selectShadingModel(int i);// This one sends special signal to change the names of the tabs in the MainWindow
     void saveSettings(QtnPropertySetAwesomeBump* settings);//save currents states to   config file

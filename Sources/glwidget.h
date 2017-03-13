@@ -74,12 +74,12 @@ class GLWidget : public GLWidgetBase , protected OPENGL_FUNCTIONS
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = 0 , QGLWidget * shareWidget  = 0);
+    GLWidget(QWidget *parent = 0 , QOpenGLWidget * shareWidget  = 0);
     ~GLWidget();
 
     QSize minimumSizeHint() const;
     QSize sizeHint() const;    
-    void setPointerToTexture(QGLFramebufferObject **pointer, TextureTypes type);
+    void setPointerToTexture(QOpenGLFramebufferObject **pointer, TextureTypes type);
 
 public slots:
 
@@ -107,6 +107,7 @@ public slots:
     void recompileRenderShader(); // read and compile custom fragment shader again, can be called from 3D settings GUI.
 
 signals:
+    void shadersCompute();
     void renderGL();
     void readyGL();
     void materialColorPicked(QColor); // emit material index color
@@ -139,7 +140,7 @@ private:
     QOpenGLShaderProgram *skybox_program;
     QOpenGLShaderProgram *env_program;
 
-    QGLFramebufferObject**  fboIdPtrs[8];
+    QOpenGLFramebufferObject**  fboIdPtrs[8];
 
 
 
@@ -171,7 +172,7 @@ private:
     QCursor lightCursor;
 
 
-
+    //QOpenGLVertexArrayObject *m_vao;
     Mesh* mesh; // displayed 3d mesh
     Mesh* skybox_mesh; // sky box cube
     Mesh* env_mesh;                       // one trinagle used for calculation of prefiltered env. map
@@ -195,23 +196,23 @@ private:
     // tone mapping mipmaps FBOS
     GLFrameBufferObject* toneMipmaps[10];
 
-    GLuint lensFlareColorsTexture;
-    GLuint lensDirtTexture;
-    GLuint lensStarTexture;
+    QOpenGLTexture *lensFlareColorsTexture;
+    QOpenGLTexture *lensDirtTexture;
+    QOpenGLTexture *lensStarTexture;
 
 protected:
     void resizeFBOs();
     void deleteFBOs();
     void applyNormalFilter(GLuint input_tex);
-    void copyTexToFBO(GLuint input_tex,QGLFramebufferObject* dst);
+    void copyTexToFBO(GLuint input_tex,QOpenGLFramebufferObject* dst);
     void applyGaussFilter(GLuint input_tex,
-                          QGLFramebufferObject* auxFBO,
-                          QGLFramebufferObject* outputFBO, float radius = 10.0);
+                          QOpenGLFramebufferObject* auxFBO,
+                          QOpenGLFramebufferObject* outputFBO, float radius = 10.0);
     void applyDofFilter(GLuint input_tex,
-                        QGLFramebufferObject* outputFBO);
-    void applyGlowFilter(QGLFramebufferObject* outputFBO);
-    void applyToneFilter(GLuint input_tex,QGLFramebufferObject* outputFBO);
-    void applyLensFlaresFilter(GLuint input_tex,QGLFramebufferObject* outputFBO);
+                        QOpenGLFramebufferObject* outputFBO);
+    void applyGlowFilter(QOpenGLFramebufferObject* outputFBO);
+    void applyToneFilter(GLuint input_tex,QOpenGLFramebufferObject* outputFBO);
+    void applyLensFlaresFilter(GLuint input_tex,QOpenGLFramebufferObject* outputFBO);
 public:
     static QDir* recentMeshDir;
 };

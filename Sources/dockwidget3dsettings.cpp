@@ -57,13 +57,19 @@ DockWidget3DSettings::DockWidget3DSettings(QWidget *parent, GLWidget* ptr_gl) :
             ui->comboBoxSkyBox->addItem(dirname);
         }
     }// end of for
+
     // setting cube map for glWidget
-    ptr_glWidget->chooseSkyBox(ui->comboBoxSkyBox->currentText(),true);
+//    ptr_glWidget->chooseSkyBox(ui->comboBoxSkyBox->currentText(),true);
 
 }
 QSize DockWidget3DSettings::sizeHint() const
 {
     return QSize(200, 60);
+}
+
+void DockWidget3DSettings::skyBox()
+{
+    ptr_glWidget->chooseSkyBox(ui->comboBoxSkyBox->currentText(),true);
 }
 
 void DockWidget3DSettings::updateSettings(int){

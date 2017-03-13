@@ -312,18 +312,18 @@ public:
 // Wrapper for FBO initialization.
 class FBOImages {
 public:
-    static void create(QGLFramebufferObject *&fbo,int width,int height,GLuint internal_format = TEXTURE_FORMAT){
+    static void create(QOpenGLFramebufferObject *&fbo,int width,int height,GLuint internal_format = TEXTURE_FORMAT){
        if(fbo)
        {
             fbo->release();
             delete fbo;
         }
-        QGLFramebufferObjectFormat format;
+        QOpenGLFramebufferObjectFormat format;
         format.setInternalTextureFormat(internal_format);
         format.setTextureTarget(GL_TEXTURE_2D);
         format.setMipmap(true);
-        fbo = new QGLFramebufferObject(width,height,format);
-        glBindTexture(GL_TEXTURE_2D, fbo->texture());
+        fbo = new QOpenGLFramebufferObject(width,height,format);
+        GLCHK(glBindTexture(GL_TEXTURE_2D, fbo->texture()));
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -341,7 +341,7 @@ public:
         GLCHK(glBindTexture(GL_TEXTURE_2D, 0));
         qDebug() << "FBOImages::creating new FBO(" << width << "," << height << ") with id=" << fbo->texture() ;
     }
-    static void resize(QGLFramebufferObject *&src,QGLFramebufferObject *&ref,GLuint internal_format = TEXTURE_FORMAT){
+    static void resize(QOpenGLFramebufferObject *&src,QOpenGLFramebufferObject *&ref,GLuint internal_format = TEXTURE_FORMAT){
         if(src == NULL){
             GLCHK(FBOImages::create(src ,ref->width(),ref->height(),internal_format));
         }else if( ref->width()  == src->width() &&
@@ -349,7 +349,7 @@ public:
             GLCHK(FBOImages::create(src ,ref->width(),ref->height(),internal_format));
         }
     }
-    static void resize(QGLFramebufferObject *&src,int width, int height,GLuint internal_format = TEXTURE_FORMAT){
+    static void resize(QOpenGLFramebufferObject *&src,int width, int height,GLuint internal_format = TEXTURE_FORMAT){
         if(!src){
             GLCHK(FBOImages::create(src ,width,height,internal_format));
         }else if( width  == src->width() &&
@@ -402,13 +402,16 @@ class FBOImageProporties{
 public:
     QtnPropertySetFormImageProp* properties;
     bool bSkipProcessing;
-    QGLFramebufferObject *fbo     ; // output image
+    QOpenGLFramebufferObject *fbo     ; // output image
 
-    GLuint scr_tex_id;       // Id of texture loaded from image, from loaded file
-    GLuint normalMixerInputTexId; // Used only by normal texture
-    int scr_tex_width;       // width of the image loaded from file.
-    int scr_tex_height;      // height ...
-    QGLWidget* glWidget_ptr; // pointer to GL context
+    QOpenGLTexture *currentTexture;
+    QOpenGLTexture *normalTexture;
+
+//    GLuint scr_tex_id;       // Id of texture loaded from image, from loaded file
+//    GLuint normalMixerInputTexId; // Used only by normal texture
+//    int scr_tex_width;       // width of the image loaded from file.
+//    int scr_tex_height;      // height ...
+    QOpenGLWidget* glWidget_ptr; // pointer to GL context
     TextureTypes imageType;  // This will define what kind of preprocessing will be applied to image
 
 
@@ -440,10 +443,10 @@ public:
         bSkipProcessing = false;
         properties      = NULL;
         fbo             = NULL;
-        normalMixerInputTexId = 0;
+        currentTexture  = NULL;
+        normalTexture   = NULL;
         glWidget_ptr = NULL;
         bFirstDraw   = true;
-        scr_tex_id   = 0;
         conversionHNDepth  = 2.0;
         bConversionBaseMap = false;
         inputImageType = INPUT_NONE;
@@ -464,11 +467,33 @@ public:
     void init(QImage& image){
         qDebug() << Q_FUNC_INFO;
 
-        glWidget_ptr->makeCurrent();
-        if(glIsTexture(scr_tex_id)) glWidget_ptr->deleteTexture(scr_tex_id);
-        scr_tex_id = glWidget_ptr->bindTexture(image,GL_TEXTURE_2D);
-        scr_tex_width  = image.width();
-        scr_tex_height = image.height();
+        GLCHK(glWidget_ptr->makeCurrent());
+        qDebug() << "Context Valid ? " << glWidget_ptr->context()->isValid();
+//        if(glIsTexture(scr_tex_id)) glWidget_ptr->deleteTexture(scr_tex_id);
+
+
+        currentTexture = new QOpenGLTexture(QOpenGLTexture::Target::Target2D);
+        image = QGLWidget::convertToGLFormat(image);
+
+        currentTexture->setData(image);
+
+        normalTexture = new QOpenGLTexture(QOpenGLTexture::Target::Target2D);
+
+        currentTexture->bind();
+
+//        GLuint texture;
+//        glGenTextures(1, &scr_tex_id);
+//        glBindTexture(GL_TEXTURE_2D, scr_tex_id);
+//        scr_tex_id = glWidget_ptr->bindTexture(image,GL_TEXTURE_2D);
+        GLenum err = glGetError();
+        if (err != GL_NO_ERROR)
+        {
+            qDebug() << "errror binding 0";
+        }
+
+
+//        scr_tex_width  = image.width();
+//        scr_tex_height = image.height();
         bFirstDraw    = true;
 
         /*
@@ -488,11 +513,18 @@ public:
 
     }
 
-    void updateSrcTexId(QGLFramebufferObject* in_ref_fbo){
+    void updateSrcTexId(QOpenGLFramebufferObject* in_ref_fbo){
         glWidget_ptr->makeCurrent();
-        if(glIsTexture(scr_tex_id)) glWidget_ptr->deleteTexture(scr_tex_id);
+
+//        glWidget_ptr->grabFramebuffer();
+//        if(glIsTexture(scr_tex_id)) glWidget_ptr->deleteTexture(scr_tex_id);
+//        QImage image = in_ref_fbo->toImage();
         QImage image = in_ref_fbo->toImage();
-        scr_tex_id   = glWidget_ptr->bindTexture(image,GL_TEXTURE_2D);
+        currentTexture->setData(image);
+        GLCHK(currentTexture->bind());
+
+//        scr_tex_id   = glWidget_ptr->bindTexture(image,GL_TEXTURE_2D);
+//        scr_tex_id = texture->textureId();
 
     }
 
@@ -519,10 +551,23 @@ public:
             qDebug() << Q_FUNC_INFO;
             glWidget_ptr->makeCurrent();
 
-            if(glIsTexture(normalMixerInputTexId)) glWidget_ptr->deleteTexture(normalMixerInputTexId);
-            if(glIsTexture(scr_tex_id)) GLCHK(glWidget_ptr->deleteTexture(scr_tex_id));
-            normalMixerInputTexId = 0;
-            scr_tex_id = 0;
+
+//            if(glIsTexture(normalMixerInputTexId)) glWidget_ptr->deleteTexture(normalMixerInputTexId);
+//            if(glIsTexture(scr_tex_id)) GLCHK(glWidget_ptr->deleteTexture(scr_tex_id));
+
+            if (normalTexture != NULL)
+            {
+                normalTexture->destroy();
+                normalTexture = NULL;
+            }
+
+            if (currentTexture != NULL)
+            {
+                currentTexture->destroy();
+                currentTexture = NULL;
+            }
+//            normalMixerInputTexId = 0;
+//            scr_tex_id = 0;
             glWidget_ptr = NULL;
             //qDebug() << "p=" << properties;
             if(properties != NULL ) delete properties;

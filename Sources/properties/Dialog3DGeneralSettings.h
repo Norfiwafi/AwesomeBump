@@ -27,7 +27,8 @@ public:
 public slots:
     void show();           // opens settings window
     void cancelSettings(); // restore last settings when window is cancelled
-    void acceptSettings(); // save current settings to file when OK button is pressed
+    void acceptSettings(); // save current settings to file when OK button is presse
+    void loadShaderSettings();
     void propertyChanged(const QtnPropertyBase*changedProperty, const QtnPropertyBase*firedProperty, QtnPropertyChangeReason reason);
     void recompileCustomShader();
     void shaderChanged(int index);
