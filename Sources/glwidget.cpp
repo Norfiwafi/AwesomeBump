@@ -502,13 +502,13 @@ void GLWidget::paintGL()
 {
 
     GLCHK(glReadBuffer(GL_BACK));
+    GLCHK( glViewport(0, 0, width(), height()) );
     // ---------------------------------------------------------
     // Drawing env
     // ---------------------------------------------------------
     bakeEnviromentalMaps();
     GLenum envirErr = glGetError();
     colorFBO->bindDefault();
-    GLCHK( glViewport(0, 0, width(), height()) );
 
     if(cameraInterpolation < 1.0){
         double w = cameraInterpolation;
@@ -791,7 +791,7 @@ void GLWidget::resizeGL(int width, int height)
     ratio = float(width)/height;
     resizeFBOs();
 
-    GLCHK( glViewport(0, 0, width, height) );
+    //GLCHK( glViewport(0, 0, width, height) );
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
@@ -1208,7 +1208,7 @@ void GLWidget::applyNormalFilter(GLuint input_tex){
 
     filter_program = post_processing_programs["NORMAL_FILTER"];
     filter_program->bind();
-    GLCHK( glViewport(0,0,width(),height()) );
+    GLCHK( glViewport(0,0,width()* devicePixelRatio(),height()* devicePixelRatio()) );
     GLCHK( filter_program->setUniformValue("quad_scale", QVector2D(1.0,1.0)) );
     GLCHK( filter_program->setUniformValue("quad_pos"  , QVector2D(0.0,0.0)) );
     GLCHK( glActiveTexture(GL_TEXTURE0) );

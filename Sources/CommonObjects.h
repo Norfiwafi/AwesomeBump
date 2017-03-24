@@ -463,35 +463,7 @@ public:
         if(properties != NULL && src.properties != NULL ) properties->copyValues(src.properties);
      }
 
-    void init(QImage& image){
-        qDebug() << Q_FUNC_INFO;
-
-        GLenum err = glGetError();
-        glWidget_ptr->makeCurrent();
-        err = glGetError();
-        if(glIsTexture(scr_tex_id)) glWidget_ptr->deleteTexture(scr_tex_id);
-        scr_tex_id = glWidget_ptr->bindTexture(image,GL_TEXTURE_2D);
-        err = glGetError();
-        scr_tex_width  = image.width();
-        scr_tex_height = image.height();
-        bFirstDraw    = true;
-
-        /*
-        switch(imageType){
-           case(HEIGHT_TEXTURE):
-           case(OCCLUSION_TEXTURE):
-                GLCHK(FBOImages::create(fbo     ,image.width(),image.height(),GL_R16F));
-                break;
-           default:
-                GLCHK(FBOImages::create(fbo     ,image.width(),image.height()));
-                break;
-        }
-        */
-        GLuint internal_format = TEXTURE_FORMAT;
-        if(imageType == HEIGHT_TEXTURE) internal_format = TEXTURE_3DRENDER_FORMAT;
-        GLCHK(FBOImages::create(fbo , image.width(), image.height(),internal_format));
-
-    }
+    void init(QImage& image);
 
     void updateSrcTexId(QGLFramebufferObject* in_ref_fbo){
         glWidget_ptr->makeCurrent();

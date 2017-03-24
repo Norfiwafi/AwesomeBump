@@ -54,7 +54,6 @@ GLTexture::GLTexture() : m_texture(0), m_failed(false)
     fbo = 0;    
     glGenTextures(1, &m_texture);
 }
-
 GLTexture::~GLTexture()
 {
     glDeleteTextures(1, &m_texture);
