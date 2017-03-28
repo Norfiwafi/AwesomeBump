@@ -19,7 +19,7 @@
 
 extern QString _find_data_dir(const QString& resource);
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(QOpenGLContext *mainContext, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -40,8 +40,17 @@ MainWindow::MainWindow(QWidget *parent) :
     if(!statusLabel->testAttribute(Qt::WA_MacNormalSize)) statusLabel->setAttribute(Qt::WA_MacSmallSize);
 #endif
 
-    glImage          = new GLImage(this);
-    glWidget         = new GLWidget(this,glImage);
+    glImage          = new GLImage(mainContext, this);
+
+    glWidget         = new GLWidget(mainContext, this, glImage);
+
+//    QOpenGLContext *testContext = glImage->context();
+//    QOpenGLContext *testContext2 = glWidget->context();
+
+//    bool test = mainContext->areSharing(glImage->context(),
+//                            glWidget->context());
+
+//    qDebug() << "Context are sharing ? : " << test;
 }
 
 #define INIT_PROGRESS(p,m) \
@@ -51,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::initializeApp()
 {
     connect(glImage,SIGNAL(rendered()),this,SLOT(initializeImages()));
+    connect(glWidget,SIGNAL(readyGL()),glImage,SLOT(glWidgetEnabled()));
     qDebug() << "Initialization: Build image properties";
     INIT_PROGRESS(10, "Build image properties");
 
@@ -88,7 +98,7 @@ void MainWindow::initializeApp()
     occlusionImageProp->setupPopertiesGUI();
     roughnessImageProp->setupPopertiesGUI();
     metallicImageProp->setupPopertiesGUI();
-	// materialManager->setupPopertiesGUI();
+    //materialManager->setupPopertiesGUI();
     grungeImageProp->setupPopertiesGUI();
 
     // setting pointers to images
@@ -140,6 +150,7 @@ void MainWindow::initializeApp()
     connect(settingsContainer,SIGNAL(emitLoadAndConvert()),this,SLOT(convertFromBase()));
     connect(settingsContainer,SIGNAL(forceSaveCurrentConfig()),this,SLOT(saveSettings()));
     connect(ui->pushButtonProjectManager,SIGNAL(toggled(bool)),settingsContainer,SLOT(setVisible(bool)));
+
 
     // -------------------------------------------------------
     // 3D settings widget
@@ -390,6 +401,12 @@ void MainWindow::initializeApp()
     connect(ui->checkBoxToggleMouseLoop    ,SIGNAL(toggled(bool)),glWidget,SLOT(toggleMouseWrap(bool)));
     connect(ui->checkBoxToggleMouseLoop    ,SIGNAL(toggled(bool)),glImage ,SLOT(toggleMouseWrap(bool)));
 
+    // batch settings
+    connect(ui->pushButtonImageBatchSource ,SIGNAL(pressed()),this,SLOT(selectSourceImages()));
+    connect(ui->pushButtonImageBatchOutput ,SIGNAL(pressed()),this,SLOT(selectOutputPath()));
+    connect(ui->pushButtonImageBatchRun ,SIGNAL(pressed()),this,SLOT(runBatch()));
+
+
 
 
 #ifdef Q_OS_MAC
@@ -472,9 +489,6 @@ void MainWindow::initializeApp()
 
     QAction *action = ui->toolBar->toggleViewAction();
     ui->menubar->addAction(action);
-
-
-    selectDiffuseTab();
 
     // Hide warning icons
     ui->pushButtonMaterialWarning  ->setVisible(false);
@@ -734,7 +748,8 @@ void MainWindow::saveImages(){
 }
 
 bool MainWindow::saveAllImages(const QString &dir){
-     QFileInfo fileInfo(dir);
+
+    QFileInfo fileInfo(dir);
     if (!fileInfo.exists()) {
         QMessageBox::information(this, QGuiApplication::applicationDisplayName(),
                                  tr("Cannot save to %1.").arg(QDir::toNativeSeparators(dir)));
@@ -1066,6 +1081,9 @@ void MainWindow::initializeGL(){
 
       qDebug() << "calling" << Q_FUNC_INFO;
 
+      QOpenGLContext *contextGLImage = glImage->context();
+      QOpenGLContext *contextGLWidget = glWidget->context();
+
 
       // setting pointers to images
 
@@ -1076,6 +1094,27 @@ void MainWindow::initializeGL(){
       materialManager->imagesPointers[4]  = occlusionImageProp;
       materialManager->imagesPointers[5]  = roughnessImageProp;
       materialManager->imagesPointers[6]  = metallicImageProp;
+
+      // Setting pointers to 3D view (this pointer are used to bindTextures).
+      GLCHK(glWidget->setPointerToTexture(&diffuseImageProp->getImageProporties()  ->fbo,DIFFUSE_TEXTURE));
+      glWidget->setPointerToTexture(&normalImageProp->getImageProporties()   ->fbo,NORMAL_TEXTURE);
+      glWidget->setPointerToTexture(&specularImageProp->getImageProporties() ->fbo,SPECULAR_TEXTURE);
+      glWidget->setPointerToTexture(&heightImageProp->getImageProporties()   ->fbo,HEIGHT_TEXTURE);
+      glWidget->setPointerToTexture(&occlusionImageProp->getImageProporties()->fbo,OCCLUSION_TEXTURE);
+      glWidget->setPointerToTexture(&roughnessImageProp->getImageProporties()->fbo,ROUGHNESS_TEXTURE);
+      glWidget->setPointerToTexture(&metallicImageProp->getImageProporties()->fbo ,METALLIC_TEXTURE);
+      glWidget->setPointerToTexture(&materialManager->getImageProporties()->fbo,MATERIAL_TEXTURE);
+
+
+      glImage ->targetImageNormal    = normalImageProp   ->getImageProporties();
+      glImage ->targetImageHeight    = heightImageProp   ->getImageProporties();
+      glImage ->targetImageSpecular  = specularImageProp ->getImageProporties();
+      glImage ->targetImageOcclusion = occlusionImageProp->getImageProporties();
+      glImage ->targetImageDiffuse   = diffuseImageProp  ->getImageProporties();
+      glImage ->targetImageRoughness = roughnessImageProp->getImageProporties();
+      glImage ->targetImageMetallic  = metallicImageProp ->getImageProporties();
+      glImage ->targetImageMaterial  = materialManager   ->getImageProporties();
+      glImage ->targetImageGrunge    = grungeImageProp   ->getImageProporties();
       
       // Loading default (initial) textures
       diffuseImageProp  ->setImage(QImage(QString(":/resources/logo/logo_D.png")));
@@ -1096,31 +1135,11 @@ void MainWindow::initializeGL(){
       roughnessImageProp->setImageName(ui->lineEditOutputName->text());
       metallicImageProp ->setImageName(ui->lineEditOutputName->text());
       grungeImageProp   ->setImageName(ui->lineEditOutputName->text());
+
       // Setting the active image
       glImage->setActiveImage(diffuseImageProp->getImageProporties());
-
-      glImage ->targetImageNormal    = normalImageProp   ->getImageProporties();
-      glImage ->targetImageHeight    = heightImageProp   ->getImageProporties();
-      glImage ->targetImageSpecular  = specularImageProp ->getImageProporties();
-      glImage ->targetImageOcclusion = occlusionImageProp->getImageProporties();
-      glImage ->targetImageDiffuse   = diffuseImageProp  ->getImageProporties();
-      glImage ->targetImageRoughness = roughnessImageProp->getImageProporties();
-      glImage ->targetImageMetallic  = metallicImageProp ->getImageProporties();
-      glImage ->targetImageMaterial  = materialManager   ->getImageProporties();
-      glImage ->targetImageGrunge    = grungeImageProp   ->getImageProporties();
-
-
-      // Setting pointers to 3D view (this pointer are used to bindTextures).
-      GLCHK(glWidget->setPointerToTexture(&diffuseImageProp->getImageProporties()  ->fbo,DIFFUSE_TEXTURE));
-      glWidget->setPointerToTexture(&normalImageProp->getImageProporties()   ->fbo,NORMAL_TEXTURE);
-      glWidget->setPointerToTexture(&specularImageProp->getImageProporties() ->fbo,SPECULAR_TEXTURE);
-      glWidget->setPointerToTexture(&heightImageProp->getImageProporties()   ->fbo,HEIGHT_TEXTURE);
-      glWidget->setPointerToTexture(&occlusionImageProp->getImageProporties()->fbo,OCCLUSION_TEXTURE);
-      glWidget->setPointerToTexture(&roughnessImageProp->getImageProporties()->fbo,ROUGHNESS_TEXTURE);
-      glWidget->setPointerToTexture(&metallicImageProp->getImageProporties()->fbo ,METALLIC_TEXTURE);
-      glWidget->setPointerToTexture(&materialManager->getImageProporties()->fbo,MATERIAL_TEXTURE);
-
-
+      
+        selectDiffuseTab();
     }
 }
 
@@ -1361,6 +1380,87 @@ void MainWindow::selectContrastInputImage(int mode){
     }
     replotAllImages();
 }
+
+void MainWindow::selectSourceImages(){
+
+    QString startPath;
+    if(recentDir.exists()) startPath = QStandardPaths::standardLocations(QStandardPaths::PicturesLocation).first();
+    else  startPath = recentDir.absolutePath();
+
+    QString source = QFileDialog::getExistingDirectory(this, tr("Select source directory"),
+                                                startPath,
+                                                QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+    QDir dir(source);
+    qDebug() << "Selecting source folder for batch processing: " << source;
+
+    QStringList filters;
+    filters << "*.png" << "*.jpg" << "*.bmp" << "*.tga";
+    QFileInfoList fileInfoList = dir.entryInfoList(filters, QDir::Files | QDir::NoDotAndDotDot);
+
+    ui->listWidgetImageBatch->clear();
+    foreach (QFileInfo fileInfo, fileInfoList) {
+       qDebug() << "Found:" << fileInfo.absoluteFilePath();
+       ui->listWidgetImageBatch->addItem(fileInfo.fileName());
+    }
+    ui->lineEditImageBatchSource->setText(source);
+}
+
+void MainWindow::selectOutputPath(){
+
+    QString startPath;
+    if(recentDir.exists()) startPath = QStandardPaths::standardLocations(QStandardPaths::PicturesLocation).first();
+    else  startPath = recentDir.absolutePath();
+
+    QString path = QFileDialog::getExistingDirectory(this, tr("Select source directory"),
+                                                startPath,
+                                                QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+    ui->lineEditImageBatchOutput->setText(path);
+}
+
+void MainWindow::runBatch(){
+
+    QString sourceFolder = ui->lineEditImageBatchSource->text();
+    QString outputFolder = ui->lineEditImageBatchOutput->text();
+
+    // check if output path exists
+    if(!QDir(outputFolder).exists() || outputFolder == ""){
+        QMessageBox msgBox;
+        msgBox.setText("Info");
+        msgBox.setInformativeText("Output path is not provided");
+        msgBox.setStandardButtons(QMessageBox::Cancel);
+        msgBox.exec();
+        return;
+    }
+
+    qDebug() << "Starting batch mode: this may take some time";
+
+
+    while(ui->listWidgetImageBatch->count() > 0){
+        QListWidgetItem* item = ui->listWidgetImageBatch->takeItem(0);
+        ui->labelBatchProgress->setText("Images left: " + QString::number(ui->listWidgetImageBatch->count()+1));
+        ui->labelBatchProgress->repaint();
+        QCoreApplication::processEvents();
+
+        QString imageName = item->text();
+        ui->lineEditOutputName->setText(imageName);
+        QString imagePath = sourceFolder + "/" + imageName;
+
+        qDebug() << "Processing image: " << imagePath;
+        diffuseImageProp->loadFile(imagePath);
+        convertFromBase();
+        saveAllImages(outputFolder);
+
+        delete item;
+        ui->listWidgetImageBatch->repaint();
+        QCoreApplication::processEvents();
+    }
+
+    ui->labelBatchProgress->setText("Done...");
+
+}
+
 
 void MainWindow::randomizeAngles(){
     FBOImageProporties::seamlessRandomTiling.randomize();

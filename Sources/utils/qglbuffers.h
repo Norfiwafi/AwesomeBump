@@ -35,8 +35,8 @@
 #define GLBUFFERS_H
 
 #include <QtOpenGL>
-#include <QOpenGLFunctions_4_0_Core>
-//#include <QOpenGLFunctions_3_3_Core>
+//#include <QOpenGLFunctions_4_0_Core>
+#include <QOpenGLFunctions_3_3_Core>
 #include <QtWidgets>
 #include <QDebug>
 #include "../qopenglerrorcheck.h"
@@ -53,7 +53,7 @@ QT_BEGIN_NAMESPACE
 class QMatrix4x4;
 QT_END_NAMESPACE
 
-class GLTexture : public QOpenGLFunctions_4_0_Core
+class GLTexture : public QOpenGLFunctions_3_3_Core
 {
 public:
     GLTexture();
@@ -68,7 +68,7 @@ protected:
     bool m_failed;
 };
 
-class GLFrameBufferObject : public QOpenGLFunctions_4_0_Core
+class GLFrameBufferObject : public QOpenGLFunctions_3_3_Core
 {
 public:
     friend class GLRenderTargetCube;
@@ -129,7 +129,7 @@ class GLTextureCube : public GLTexture
 {
 public:
     GLTextureCube(int size, GLuint defaultFBO);
-    explicit GLTextureCube(const QStringList& fileNames, int size = 0);
+    explicit GLTextureCube(const QStringList& fileNames, GLuint defaultFBO, int size = 0);
     void load(int size, int face, QRgb *data);
     virtual void create() Q_DECL_OVERRIDE;
     virtual void bind() Q_DECL_OVERRIDE;

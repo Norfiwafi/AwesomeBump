@@ -44,7 +44,8 @@
 #include "glwidget.h"
 QDir* GLWidget::recentMeshDir = NULL;
 
-GLWidget::GLWidget(QWidget *parent, QOpenGLWidget * shareWidget)
+GLWidget::GLWidget(QOpenGLContext *mainContext,
+                   QWidget *parent, QOpenGLWidget * shareWidget)
     : GLWidgetBase(QGLFormat::defaultFormat(), parent, shareWidget)
 {
     setAcceptDrops(true);
@@ -64,8 +65,7 @@ GLWidget::GLWidget(QWidget *parent, QOpenGLWidget * shareWidget)
     setCursor(Qt::PointingHandCursor);
     lightCursor = QCursor(QPixmap(":/resources/cursors/lightCursor.png"));
 
-
-    glImagePtr = (GLImage*)shareWidget;
+    //glImagePtr = (GLImage*)shareWidget;
     // Post processing variables:
     colorFBO = NULL;
     outputFBO= NULL;
@@ -195,6 +195,9 @@ void GLWidget::toggleMetallicView(bool enable){
 void GLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
+
+    makeCurrent();
+    emit readyGL();
 
     if (glslShadersList == NULL)
     {
@@ -575,7 +578,7 @@ void GLWidget::initializeGL()
         qDebug() << "Error here 2";
     }
 
-    m_prefiltered_env_map = new GLTextureCube(512);
+    m_prefiltered_env_map = new GLTextureCube(512, defaultFramebufferObject());
     m_prefiltered_env_map->create();
 
     resizeFBOs();
@@ -592,6 +595,7 @@ void GLWidget::paintGL()
         // ---------------------------------------------------------
         bakeEnviromentalMaps();
         colorFBO->bindDefault();
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fboBinding);
         GLCHK( glViewport(0, 0, width(), height()) );
 
         if(cameraInterpolation < 1.0){
@@ -654,12 +658,13 @@ void GLWidget::paintGL()
         // ---------------------------------------------------------
         QOpenGLShaderProgram* program_ptrs[2] = {currentShader->program,line_program};
 
+        QString name = currentShader->shaderName;
 
         GLCHK( glEnable(GL_CULL_FACE) );
         GLCHK( glEnable(GL_DEPTH_TEST) );
         GLCHK( glCullFace(GL_BACK) );
-        glDisable(GL_POLYGON_OFFSET_LINE);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        GLCHK(glDisable(GL_POLYGON_OFFSET_LINE));
+        GLCHK(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
 
         for(int pindex = 0 ; pindex < 2 ; pindex ++){
 
@@ -1141,7 +1146,7 @@ void GLWidget::chooseSkyBox(QString cubeMapName,bool bFirstTime){
     bDiffuseMapBaked     = false;
 
     if(m_env_map != NULL) delete m_env_map;
-    m_env_map     = new GLTextureCube(list);
+    m_env_map     = new GLTextureCube(list, defaultFramebufferObject());
     m_env_map->create();
 
     if(m_env_map->failed()){

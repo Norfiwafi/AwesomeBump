@@ -74,7 +74,7 @@ class GLWidget : public GLWidgetBase , protected OPENGL_FUNCTIONS
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = 0 , QOpenGLWidget * shareWidget  = 0);
+    GLWidget(QOpenGLContext *mainContext, QWidget *parent, QOpenGLWidget *shareWidget);
     ~GLWidget();
 
     QSize minimumSizeHint() const;
@@ -181,7 +181,7 @@ private:
     GLTextureCube* m_prefiltered_env_map; // filtered lambertian cube map
     bool bDiffuseMapBaked;                // prevent program from calculating diffuse env. map many times
 
-    GLImage* glImagePtr;
+    //GLImage* glImagePtr;
 
     // Post-processing variables
     std::map<std::string,QOpenGLShaderProgram*> post_processing_programs; // all post processing functions

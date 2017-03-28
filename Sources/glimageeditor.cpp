@@ -41,7 +41,7 @@
 
 
 
-GLImage::GLImage(QWidget *parent)
+GLImage::GLImage(QOpenGLContext *mainContext, QWidget *parent)
     : GLWidgetBase(QGLFormat::defaultFormat(), parent)
 
 {
@@ -55,6 +55,7 @@ GLImage::GLImage(QWidget *parent)
     fboRatio = 1;
     renderFBO		  = NULL;
     paintFBO		  = NULL;
+    glWidgetOk = false;
 
     // initialize position of the corners
     cornerPositions[0] = QVector2D(-0.0,-0);
@@ -331,7 +332,8 @@ void GLImage::initializeGL()
 
 void GLImage::paintGL()
 {
-
+    if (!glWidgetOk)
+        return;
     // Perform filters on images and render the final result to renderFBO
     // avoid rendering function if there is rendered something already
     if(!bSkipProcessing && !bRendering){
@@ -405,8 +407,7 @@ void GLImage::paintGL()
 
 void GLImage::render(){
 
-
-    if (!activeImage) return;
+    if (!activeImage || !activeImage->fbo) return;
     if ( activeImage->fbo){ // since grunge map can be different we need to calculate ratio each time
       fboRatio = float(activeImage->fbo->width())/activeImage->fbo->height();
       orthographicProjHeight = (1+zoom)/windowRatio;
@@ -1003,6 +1004,11 @@ void GLImage::showEvent(QShowEvent* event){
     resetView();
 }
 
+void GLImage::glWidgetEnabled()
+{
+    glWidgetOk = true;
+}
+
 
 void GLImage::resizeFBO(int width, int height){
      conversionType = CONVERT_RESIZE;
@@ -1012,7 +1018,7 @@ void GLImage::resizeFBO(int width, int height){
 
 void GLImage::resetView(){
 
-    if (!activeImage) return;
+    if (!activeImage || !activeImage->fbo) return;
 
     makeCurrent();
 
@@ -1040,6 +1046,8 @@ void GLImage::resetView(){
 
 void GLImage::resizeGL(int width, int height)
 {
+    if (!glWidgetOk)
+        return;
 //  qreal dpi = QGuiApplication::primaryScreen()->logicalDotsPerInch();
 
 //  width = (int) (width * dpi + 0.5f);

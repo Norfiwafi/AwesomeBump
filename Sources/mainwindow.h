@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+
 #include <QDir>
 
 #include "CommonObjects.h"
@@ -32,7 +33,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QOpenGLContext *mainContext, QWidget *parent = 0);
 
     QSize sizeHint() const;
     ~MainWindow();
@@ -136,6 +137,10 @@ public slots:
     void resetRandomPatches();
     void selectContrastInputImage(int mode);
 
+    // batch tool
+    void selectSourceImages();
+    void selectOutputPath();
+    void runBatch();
 private:    
     // saves all textures to given directory
     bool saveAllImages(const QString &dir);

@@ -69,7 +69,7 @@ QSize DockWidget3DSettings::sizeHint() const
 
 void DockWidget3DSettings::skyBox()
 {
-    ptr_glWidget->chooseSkyBox(ui->comboBoxSkyBox->currentText(),true);
+    ptr_glWidget->chooseSkyBox(ui->comboBoxSkyBox->currentText(),false);
 }
 
 void DockWidget3DSettings::updateSettings(int){

@@ -168,22 +168,22 @@ protected:
 	}
 };
 
-bool checkOpenGL(){
+bool checkOpenGL(QOpenGLContext *mainContext){
 
-    QGLWidget *glWidget = new QGLWidget;
+//    QGLWidget *glWidget = new QGLWidget;
 
-    QGLContext* glContext = (QGLContext *) glWidget->context();
-    GLCHK( glContext->makeCurrent() );
+//    QGLContext* glContext = (QGLContext *) glWidget->context();
+//    GLCHK( glContext->makeCurrent() );
 
     int glMajorVersion, glMinorVersion;
 
-    glMajorVersion = glContext->format().majorVersion();
-    glMinorVersion = glContext->format().minorVersion();
+    glMajorVersion = mainContext->format().majorVersion();
+    glMinorVersion = mainContext->format().minorVersion();
 
     qDebug() << "Running the " + QString(AWESOME_BUMP_VERSION);
     qDebug() << "Checking OpenGL widget:";
     qDebug() << "Widget OpenGL:" << QString("%1.%2").arg(glMajorVersion).arg(glMinorVersion);
-    qDebug() << "Context valid:" << glContext->isValid() ;
+    qDebug() << "Context valid:" << mainContext->isValid() ;
     qDebug() << "OpenGL information:" ;
     qDebug() << "VENDOR:"       << (const char*)glGetString(GL_VENDOR) ;
     qDebug() << "RENDERER:"     << (const char*)glGetString(GL_RENDERER) ;
@@ -192,7 +192,7 @@ bool checkOpenGL(){
 
     Display3DSettings::openGLVersion = GL_MAJOR + (GL_MINOR * 0.1);
 
-    delete glWidget;
+//    delete glWidget;
 
     // check openGL version
     if( glMajorVersion < GL_MAJOR || (glMajorVersion == GL_MAJOR && glMinorVersion < GL_MINOR))
@@ -209,11 +209,32 @@ extern void regABColorDelegates();
 
 int main(int argc, char *argv[])
 {
+
+    // setup default context attributes:
+    QGLFormat glFormat(QGL::SampleBuffers); // deprecated
+    QSurfaceFormat format;
+
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+
+#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+     /*
+     * Commenting out the next line because it causes rendering to fail.  QGLFormat::CoreProfile
+     * disables all OpenGL functions that are depreciated as of OpenGL 3.0.  This fix is a workaround.
+     * The full solution is to replace all depreciated OpenGL functions with their current implements.
+    */
+# if defined(Q_OS_MAC)
+    glFormat.setProfile( QGLFormat::CoreProfile );
+    format.setProfile( QSurfaceFormat::CoreProfile );
+# endif
+    glFormat.setVersion( GL_MAJOR, GL_MINOR );
+    format.setVersion( GL_MAJOR, GL_MINOR );
+#endif
+
+    QGLFormat::setDefaultFormat(glFormat);
+    QSurfaceFormat::setDefaultFormat(format);
     QApplication::setAttribute( Qt::AA_ShareOpenGLContexts );
     QApplication app(argc, argv);
-
-
-
 
     regABSliderDelegates();
     regABColorDelegates();
@@ -265,31 +286,7 @@ int main(int argc, char *argv[])
     // removing old log file
     QFile::remove(AB_LOG);
 
-	// setup default context attributes:
-    QGLFormat glFormat(QGL::SampleBuffers); // deprecated
-    QSurfaceFormat format;
-
-    format.setDepthBufferSize(24);
-    format.setStencilBufferSize(8);
-
-#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
-     /*
-     * Commenting out the next line because it causes rendering to fail.  QGLFormat::CoreProfile
-     * disables all OpenGL functions that are depreciated as of OpenGL 3.0.  This fix is a workaround.
-     * The full solution is to replace all depreciated OpenGL functions with their current implements.
-    */
-# if defined(Q_OS_MAC)
-    glFormat.setProfile( QGLFormat::CoreProfile );
-    format.setProfile( QSurfaceFormat::CoreProfile );
-# endif
-    glFormat.setVersion( GL_MAJOR, GL_MINOR );
-    format.setVersion( GL_MAJOR, GL_MINOR );
-#endif
-
-    QGLFormat::setDefaultFormat(glFormat);
-    QSurfaceFormat::setDefaultFormat(format);
-
-    if(!checkOpenGL()){
+    if(!checkOpenGL(QOpenGLContext::globalShareContext())){
 
         AllAboutDialog msgBox;
         msgBox.setPixmap(":/resources/icons/icon-off.png");
@@ -304,7 +301,7 @@ int main(int argc, char *argv[])
         return app.exec();
     }else{
 
-        MainWindow window;
+        MainWindow window(QOpenGLContext::globalShareContext());
         QObject::connect(&window,SIGNAL(initProgress(int)),&sp,SLOT(setProgress(int)));
         QObject::connect(&window,SIGNAL(initMessage(const QString&)),&sp,SLOT(setMessage(const QString&)));
         window.initializeApp();

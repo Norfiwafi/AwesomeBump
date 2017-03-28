@@ -76,7 +76,7 @@ class GLImage : public GLWidgetBase , protected OPENGL_FUNCTIONS
     Q_OBJECT
 
 public:
-    GLImage(QWidget *parent = 0 );
+    GLImage(QOpenGLContext *mainContext, QWidget *parent = 0 );
     ~GLImage();
     void cleanup();
 
@@ -111,6 +111,7 @@ public slots:
     void selectSeamlessMode(SeamlessMode mode);
     void toggleColorPicking(bool toggle);
     void pickImageColor(QtnPropertyABColor *property);
+    void glWidgetEnabled();
 
     void copyRenderToPaintFBO(); // when image is rendered copy it to paintFBO in order to display result
 signals:
@@ -301,6 +302,7 @@ private:
     GLuint vertexArray;
     GLuint vbos[3];
     ConversionType conversionType;
+    bool glWidgetOk;
     bool bShadowRender;
     bool bSkipProcessing;   // draw quad but skip all the processing step (using during mouse interaction)
     float windowRatio;      // window width-height ratio

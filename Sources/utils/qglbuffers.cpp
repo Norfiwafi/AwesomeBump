@@ -135,7 +135,7 @@ void GLTexture2D::createTextureWithFileName(const QString &fileName, int width, 
 
     // Works on x86, so probably works on all little-endian systems.
     // Does it work on big-endian systems?
-    glTexImage2D(GL_TEXTURE_2D, 0, 4, image.width(), image.height(), 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0,
         GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -151,7 +151,7 @@ void GLTexture2D::createTextureWithSize(int width, int height)
 {
 
     glBindTexture(GL_TEXTURE_2D, m_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, 4, width, height, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
         GL_BGRA, GL_UNSIGNED_BYTE, 0);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -195,7 +195,7 @@ void GLTexture3D::load(int width, int height, int depth, QRgb *data)
 //    width *=2;
 //    height *= 2;
     glBindTexture(GL_TEXTURE_3D, m_texture);
-    glTexImage3D(GL_TEXTURE_3D, 0, 4, width, height, depth, 0,
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, width, height, depth, 0,
         GL_BGRA, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_3D, 0);
 }
@@ -206,7 +206,7 @@ void GLTexture3D::create()
     //    width *=2;
     //    height *= 2;
         glBindTexture(GL_TEXTURE_3D, m_texture);
-        glTexImage3D(GL_TEXTURE_3D, 0, 4, width, height, depth, 0,
+        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, width, height, depth, 0,
             GL_BGRA, GL_UNSIGNED_BYTE, 0);
 
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -242,10 +242,11 @@ GLTextureCube::GLTextureCube(int size_, GLuint defaultFBO_)
     defaultFBO = defaultFBO_;
 }
 
-GLTextureCube::GLTextureCube(const QStringList& fileNames_, int size_)
+GLTextureCube::GLTextureCube(const QStringList& fileNames_, GLuint defaultFBO_, int size_)
 {
     fileNames = fileNames_;
     size = size_;
+    defaultFBO = defaultFBO_;
 }
 
 void GLTextureCube::create()
@@ -267,7 +268,7 @@ void GLTextureCube::createTextureCubeWithSize(int size)
         GLCHK(glBindTexture(GL_TEXTURE_CUBE_MAP, m_texture));
 
         for (int i = 0; i < 6; ++i)
-            GLCHK(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, size, size, 0,
+            GLCHK(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, size, size, 0,
                 GL_BGRA, GL_UNSIGNED_BYTE, 0));
 
         GLCHK(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
@@ -329,7 +330,7 @@ void GLTextureCube::createTextureCubeFromFileNames(const QStringList &fileNames,
 
         // Works on x86, so probably works on all little-endian systems.
         // Does it work on big-endian systems?
-        GLCHK(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_RGBA8, image.width(), image.height(), 0,
+        GLCHK(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_RGBA, image.width(), image.height(), 0,
             GL_BGRA, GL_UNSIGNED_BYTE, image.bits()) );
 
         if (++index == 6)
@@ -338,7 +339,7 @@ void GLTextureCube::createTextureCubeFromFileNames(const QStringList &fileNames,
 
     // Clear remaining faces.
     while (index < 6) {
-        GLCHK(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_RGBA8, size, size, 0,
+        GLCHK(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_RGBA, size, size, 0,
             GL_BGRA, GL_UNSIGNED_BYTE, 0));
         ++index;
     }
@@ -367,7 +368,7 @@ void GLTextureCube::createTextureCubeFromFileNames(const QStringList &fileNames,
 void GLTextureCube::load(int size, int face, QRgb *data)
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_texture);
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 4, size, size, 0,
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA, size, size, 0,
             GL_BGRA, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
@@ -469,8 +470,7 @@ GLFrameBufferObject::GLFrameBufferObject(int width, int height, GLuint defaultFB
     format.setMipmap(true);
     GLuint boundTId = QOpenGLTexture::boundTextureId(QOpenGLTexture::BindingTarget2D);
 
-    qDebug() << "Texture bound : " << boundTId;
-    format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+    format.setAttachment(QOpenGLFramebufferObject::Depth);
 //    GLCHK(glBindTexture(GL_TEXTURE_2D, 25));
 //    GLCHK(glBindTexture(GL_TEXTURE_2D, 26));
     fbo = new QOpenGLFramebufferObject(width,height,format);
@@ -479,9 +479,7 @@ GLFrameBufferObject::GLFrameBufferObject(int width, int height, GLuint defaultFB
 
 //    boundTId = QOpenGLTexture::boundTextureId(QOpenGLTexture::BindingTarget2D);
 
-    qDebug() << "Texture bound After: " << boundTId;
-    qDebug() << "Texture : " << fbo->texture();
-//    GLCHK(fbo->bind());
+    GLCHK(fbo->bind());
 
     GLint textureId;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &textureId);

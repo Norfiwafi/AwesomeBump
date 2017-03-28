@@ -472,10 +472,10 @@ public:
 //        if(glIsTexture(scr_tex_id)) glWidget_ptr->deleteTexture(scr_tex_id);
 
 
-        currentTexture = new QOpenGLTexture(QOpenGLTexture::Target::Target2D);
-        image = QGLWidget::convertToGLFormat(image);
+        currentTexture = new QOpenGLTexture(image);
+        //image = QOpenGLWidget::convertToGLFormat(image);
 
-        currentTexture->setData(image);
+        //currentTexture->setData(image);
 
         normalTexture = new QOpenGLTexture(QOpenGLTexture::Target::Target2D);
 
